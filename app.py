@@ -28,6 +28,9 @@ def predict():
         # Obtener datos de la solicitud
         data = request.get_json(force=True)
         
+        # Imprimir los datos recibidos para verificar
+        print("Datos recibidos:", data)
+
         # Convertir los datos en un formato adecuado para el modelo
         # Añadimos un valor ficticio para completar las 5 características
         input_data = np.array([
