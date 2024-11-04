@@ -34,7 +34,7 @@ def predict():
             data['estatura'],
             data['peso'],
             data['dosis_quimioterapia']
-        ]).reshape(1, -1)
+        ]).reshape(1, 1, 4)  # Cambiar el reshape a (1, 1, 4) para cumplir con el input esperado
         
         # Realizar la predicción
         prediction = model.predict(input_data)
