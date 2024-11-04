@@ -16,13 +16,14 @@ def predict():
         data = request.get_json(force=True)
         
         # Convertir los datos en un formato adecuado para el modelo
-        input_data = np.array([
+        # Añade un valor más si el modelo lo requiere (por ejemplo, un cero)
+        input_data = np.array([[
             data['edad'],
             data['estatura'],
             data['peso'],
-            data['dosis_quimioterapia']
-            # Agrega más datos aquí si tu modelo lo requiere
-        ]).reshape(1, -1)
+            data['dosis_quimioterapia'],
+            0  # Añade este valor si el modelo necesita cinco características
+        ]]).reshape(1, 1, 5)  # Cambia la forma aquí según lo que el modelo espera
         
         # Realizar la predicción
         prediction = model.predict(input_data)
