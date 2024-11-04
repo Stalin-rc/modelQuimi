@@ -6,6 +6,19 @@ import os
 # Cargar el modelo .h5
 model = tf.keras.models.load_model("modelo_lstm.h5")
 
+# Definir el mapeo de índice a clase
+class_mapping = {
+    0: "IA1",
+    1: "IA2",
+    2: "IB",
+    3: "IIA",
+    4: "IIIA",
+    5: "IIIB",
+    6: "IIIC",
+    7: "IVA",
+    8: "IVB"
+}
+
 # Inicializar la aplicación Flask
 app = Flask(__name__)
 
@@ -16,21 +29,22 @@ def predict():
         data = request.get_json(force=True)
         
         # Convertir los datos en un formato adecuado para el modelo
-        # Añade un valor más si el modelo lo requiere (por ejemplo, un cero)
-        input_data = np.array([[
+        input_data = np.array([
             data['edad'],
             data['estatura'],
             data['peso'],
-            data['dosis_quimioterapia'],
-            0  # Añade este valor si el modelo necesita cinco características
-        ]]).reshape(1, 1, 5)  # Cambia la forma aquí según lo que el modelo espera
+            data['dosis_quimioterapia']
+        ]).reshape(1, -1)
         
         # Realizar la predicción
         prediction = model.predict(input_data)
-        predicted_class = np.argmax(prediction, axis=1)[0]
+        predicted_index = np.argmax(prediction, axis=1)[0]
+        
+        # Convertir el índice a la clase original
+        predicted_class = class_mapping.get(predicted_index, "Clase desconocida")
         
         # Devolver la clase predicha
-        return jsonify({'predicted_class': int(predicted_class)})
+        return jsonify({'predicted_class': predicted_class})
 
     except Exception as e:
         return jsonify({'error': str(e)}), 400
