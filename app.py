@@ -6,7 +6,7 @@ import os
 # Cargar el modelo .h5
 model = tf.keras.models.load_model("modelo_lstm.h5")
 
-# Definir el mapeo de índice a clase
+# Definir el mapeo de índice a clase sin el prefijo "Clase"
 class_mapping = {
     0: "IA1",
     1: "IA2",
@@ -29,12 +29,14 @@ def predict():
         data = request.get_json(force=True)
         
         # Convertir los datos en un formato adecuado para el modelo
+        # Añadimos un valor ficticio para completar las 5 características
         input_data = np.array([
             data['edad'],
             data['estatura'],
             data['peso'],
-            data['dosis_quimioterapia']
-        ]).reshape(1, 1, 5)  # Cambiar el reshape a (1, 1, 4) para cumplir con el input esperado
+            data['dosis_quimioterapia'],
+            0  # Valor adicional para cumplir con el requisito de 5 características
+        ]).reshape(1, 1, 5)  # Cambiamos el reshape a (1, 1, 5) para cumplir con el input esperado
         
         # Realizar la predicción
         prediction = model.predict(input_data)
