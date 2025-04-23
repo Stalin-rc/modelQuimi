@@ -1,7 +1,6 @@
-# Web framework
-flask==2.3.2          # minúsculas o mayúsculas da igual, pero así mantienes consistencia
-gunicorn==21.2.0      # WSGI server de producción
-
-# IA / NumPy
-tensorflow-cpu==2.15.0   # versión CPU → ~80 MB; evita dependencias GPU y reduce RAM
+# requirements.txt
+flask==2.3.2
+flask-cors==4.0.0
+gunicorn==21.2.0
+tensorflow-cpu==2.16.2   # ← versión compatible con Python 3.12
 numpy==1.26.4
