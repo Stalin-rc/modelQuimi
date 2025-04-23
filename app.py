@@ -1,59 +1,73 @@
+# app.py
 from flask import Flask, request, jsonify
+from flask_cors import CORS           # opcional: elimina si no lo necesitas
 import tensorflow as tf
 import numpy as np
 import os
+import logging
 
-# Cargar el modelo .h5
-model = tf.keras.models.load_model("modelo_lstm.h5")
+# ── Configuración mínima de logging ─────────────────────────────────────────────
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Definir el mapeo de índice a clase sin el prefijo "Clase"
+# ── Carga del modelo (.h5) ──────────────────────────────────────────────────────
+MODEL_PATH = "modelo_lstm.h5"
+logger.info(f"Cargando modelo desde {MODEL_PATH} …")
+model = tf.keras.models.load_model(MODEL_PATH, compile=False)  # compile=False evita warnings
+logger.info("Modelo cargado correctamente")
+
+# ── Mapeo índice → clase ────────────────────────────────────────────────────────
 class_mapping = {
-    0: "IA1",
-    1: "IA2",
-    2: "IB",
-    3: "IIA",
-    4: "IIIA",
-    5: "IIIB",
-    6: "IIIC",
-    7: "IVA",
-    8: "IVB"
+    0: "IA1", 1: "IA2", 2: "IB", 3: "IIA",
+    4: "IIIA", 5: "IIIB", 6: "IIIC",
+    7: "IVA", 8: "IVB"
 }
 
-# Inicializar la aplicación Flask
+# ── Inicializar Flask ──────────────────────────────────────────────────────────
 app = Flask(__name__)
+CORS(app)                               # opcional: habilita CORS
 
-@app.route('/predict', methods=['POST'])
+# ── Endpoints ───────────────────────────────────────────────────────────────────
+@app.route("/health", methods=["GET"])
+def health():
+    """Endpoint de prueba para verificar que el contenedor está vivo."""
+    return jsonify({"status": "ok"}), 200
+
+
+@app.route("/predict", methods=["POST"])
 def predict():
     try:
-        # Obtener datos de la solicitud
-        data = request.get_json(force=True)
-        
-        # Imprimir los datos recibidos para verificar
-        print("Datos recibidos:", data)
+        data = request.get_json(force=True)  # fuerza carga de JSON
+        logger.info(f"Datos recibidos: {data}")
 
-        # Convertir los datos en un formato adecuado para el modelo
-        # Añadimos un valor ficticio para completar las 5 características
+        # Validar claves requeridas
+        required = {"edad", "estatura", "peso", "dosis_quimioterapia"}
+        if not required.issubset(data):
+            faltantes = required.difference(data)
+            return jsonify({"error": f"Faltan campos: {', '.join(faltantes)}"}), 400
+
+        # Construir ndarray (1, 1, 5)
         input_data = np.array([
-            data['edad'],
-            data['estatura'],
-            data['peso'],
-            data['dosis_quimioterapia'],
-            0  # Valor adicional para cumplir con el requisito de 5 características
-        ]).reshape(1, 1, 5)  # Cambiamos el reshape a (1, 1, 5) para cumplir con el input esperado
-        
-        # Realizar la predicción
-        prediction = model.predict(input_data)
-        predicted_index = np.argmax(prediction, axis=1)[0]
-        
-        # Convertir el índice a la clase original
-        predicted_class = class_mapping.get(predicted_index, "Clase desconocida")
-        
-        # Devolver la clase predicha
-        return jsonify({'predicted_class': predicted_class})
+            data["edad"],
+            data["estatura"],
+            data["peso"],
+            data["dosis_quimioterapia"],
+            0  # valor de relleno
+        ], dtype=np.float32).reshape(1, 1, 5)
 
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        # Predicción
+        preds = model.predict(input_data)
+        idx = int(np.argmax(preds, axis=1)[0])
+        predicted_class = class_mapping.get(idx, "Clase desconocida")
 
-if __name__ == '__main__':
-    # Utilizar el puerto proporcionado por Railway o el puerto 5000 por defecto
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+        return jsonify({"predicted_class": predicted_class})
+
+    except Exception as exc:
+        logger.exception("Error en /predict")
+        return jsonify({"error": str(exc)}), 500
+
+
+# ── Main local (Railway usará Gunicorn) ─────────────────────────────────────────
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
