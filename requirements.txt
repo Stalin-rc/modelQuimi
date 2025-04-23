@@ -1,3 +1,7 @@
-Flask
-tensorflow
-numpy
+# Web framework
+flask==2.3.2          # minúsculas o mayúsculas da igual, pero así mantienes consistencia
+gunicorn==21.2.0      # WSGI server de producción
+
+# IA / NumPy
+tensorflow-cpu==2.15.0   # versión CPU → ~80 MB; evita dependencias GPU y reduce RAM
+numpy==1.26.4
