@@ -5,6 +5,21 @@ import tensorflow as tf
 import numpy as np
 import os
 import logging
+import tensorflow as tf
+import numpy as np
+import os, logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+MODEL_PATH = "modelo_lstm.h5"
+logger.info(f"Cargando modelo desde {MODEL_PATH} …")
+model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+
+# ── PRE-CALENTAR EL MODELO ──────────────────────────────────────────────────────
+logger.info("Calentando el modelo con un predict ficticio …")
+_ = model.predict(np.zeros((1, 1, 5), dtype=np.float32))   # <-- ESTA LÍNEA
+logger.info("Modelo listo para inferencia")
 
 # ── Configuración mínima de logging ─────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
