@@ -1,76 +1,70 @@
-from flask import Flask, request, jsonify
-import tensorflow as tf
-import numpy as np
 import os
+import time
+import numpy as np
+import tensorflow as tf
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
-# Cargar el modelo .h5
+# ─── Inicialización de la app ────────────────────────────────────────────────
+app = Flask(__name__)
+CORS(app)  # habilita CORS para todas las rutas
+
+# ─── Cargar el modelo .h5 y warm-up ───────────────────────────────────────────
 model = tf.keras.models.load_model("modelo_lstm.h5")
-
-# ─── Warm-up del modelo para compilar kernels antes de la primera petición ───
 print("⚡ Realizando warm-up del modelo…")
 try:
-    _ = model.predict(np.zeros((1, 1, 5)))  # shape (batch=1, timesteps=1, features=5)
+    # un batch de ceros con shape (batch=1, timesteps=1, features=5)
+    _ = model.predict(np.zeros((1, 1, 5)))
     print("✅ Warm-up completado")
 except Exception as e:
     print("❌ Error en warm-up:", e)
-# ───────────────────────────────────────────────────────────────────────────────
 
-
-# Definir el mapeo de índice a clase sin el prefijo "Clase"
-
+# ─── Mapeo de índices a clases ────────────────────────────────────────────────
 class_mapping = {
-    0: "IA1",
-    1: "IA2",
-    2: "IB",
-    3: "IIA",
-    4: "IIIA",
-    5: "IIIB",
-    6: "IIIC",
-    7: "IVA",
-    8: "IVB"
+    0: "IA1", 1: "IA2", 2: "IB",  3: "IIA", 4: "IIIA",
+    5: "IIIB",6: "IIIC",7: "IVA", 8: "IVB"
 }
 
-# Inicializar la aplicación Flask
-app = Flask(__name__)
+# ─── Endpoint de salud ───────────────────────────────────────────────────────
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
+# ─── Endpoint de predicción ─────────────────────────────────────────────────
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
-        # Obtener datos de la solicitud
         data = request.get_json(force=True)
-        
-        # Imprimir los datos recibidos para verificar
         print("Datos recibidos:", data)
 
-        # Convertir los datos en un formato adecuado para el modelo
-        # Añadimos un valor ficticio para completar las 5 características
-
-
+        # Construir array de entrada con 5 características
         input_data = np.array([
             data['edad'],
             data['estatura'],
             data['peso'],
             data['dosis_quimioterapia'],
-            0  # Valor adicional para cumplir con el requisito de 5 características
-        ]).reshape(1, 1, 5)  # Cambiamos el reshape a (1, 1, 5) para cumplir con el input esperado
-        
-        # Realizar la predicción
+            0  # valor ficticio
+        ]).reshape(1, 1, 5)
+        print("Shape de entrada:", input_data.shape)
+
+        # Medir tiempo de inferencia
+        t0 = time.time()
         prediction = model.predict(input_data)
-        predicted_index = np.argmax(prediction, axis=1)[0]
-        
-        # Convertir el índice a la clase original
+        dt = time.time() - t0
+        print(f"🔍 Inferencia en {dt:.3f}s")
+
+        print("➤ Salida cruda:", prediction)
+        predicted_index = int(np.argmax(prediction, axis=1)[0])
         predicted_class = class_mapping.get(predicted_index, "Clase desconocida")
-        
-        # Devolver la clase predicha
+        print("↪️ Clase final:", predicted_class)
+
         return jsonify({'predicted_class': predicted_class})
 
     except Exception as e:
+        print("❌ Error en predict():", e)
         return jsonify({'error': str(e)}), 400
 
-@app.get("/health")
-def health():
-    return {"status": "ok"}
-
+# ─── Arranque ────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
-    # Utilizar el puerto proporcionado por Railway o el puerto 5000 por defecto
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
