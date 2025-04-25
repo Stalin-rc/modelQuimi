@@ -36,6 +36,12 @@ class_mapping = {
 def health():
     return {"status": "ok"}
 
+# ─── Stub GET para discovery en APEX ─────────────────────────────────────────
+@app.get("/predict")
+def predict_get():
+    return jsonify({"predicted_class": "IA1"})
+# ──────────────────────────────────────────────────────────────────────────────
+
 # ─── Endpoint de predicción ─────────────────────────────────────────────────
 @app.route('/predict', methods=['POST'])
 def predict():
