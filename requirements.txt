@@ -1,3 +1,1 @@
-Flask
-tensorflow
-numpy
+txt<br>flask~=2.3<br>gunicorn~=22.0<br>tensorflow-cpu~=2.15<br>numpy~=1.26<br>
