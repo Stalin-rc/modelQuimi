@@ -6,6 +6,16 @@ import os
 # Cargar el modelo .h5
 model = tf.keras.models.load_model("modelo_lstm.h5")
 
+# ─── Warm-up del modelo para compilar kernels antes de la primera petición ───
+print("⚡ Realizando warm-up del modelo…")
+try:
+    _ = model.predict(np.zeros((1, 1, 5)))  # shape (batch=1, timesteps=1, features=5)
+    print("✅ Warm-up completado")
+except Exception as e:
+    print("❌ Error en warm-up:", e)
+# ───────────────────────────────────────────────────────────────────────────────
+
+
 # Definir el mapeo de índice a clase sin el prefijo "Clase"
 
 class_mapping = {
@@ -56,6 +66,10 @@ def predict():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 400
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 if __name__ == '__main__':
     # Utilizar el puerto proporcionado por Railway o el puerto 5000 por defecto
